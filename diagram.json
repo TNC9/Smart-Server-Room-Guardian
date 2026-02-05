@@ -1,20 +1,42 @@
 {
   "version": 1,
-  "author": "Thananchai Chaimanee",
+  "author": "Smart Server Room Guardian",
   "editor": "wokwi",
   "parts": [
-    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
-    { "type": "wokwi-dht22", "id": "dht1", "top": -124.5, "left": 177, "attrs": {} },
-    { "type": "wokwi-potentiometer", "id": "pot1", "top": -116.5, "left": -96.2, "attrs": {} },
     {
-      "type": "wokwi-buzzer",
-      "id": "bz1",
-      "top": -16.8,
-      "left": 280.2,
-      "attrs": { "volume": "0.1" }
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht1",
+      "top": -120,
+      "left": 200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot1",
+      "top": -120,
+      "left": 350,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ssd1306",
+      "id": "oled1",
+      "top": 100,
+      "left": 300,
+      "attrs": {
+        "width": "128",
+        "height": "64"
+      }
     },
     {
       "type": "wokwi-led",
+<<<<<<< HEAD
       "id": "led1",
       "top": 121.2,
       "left": 195.8,
@@ -51,6 +73,387 @@
     [ "led1:C", "r1:2", "green", [ "v0" ] ],
     [ "r1:1", "esp:2", "green", [ "v0" ] ],
     [ "led1:A", "gnd5:GND", "green", [ "v0" ] ]
+=======
+      "id": "led_r",
+      "top": 200,
+      "left": 200,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_g",
+      "top": 200,
+      "left": 250,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_b",
+      "top": 200,
+      "left": 300,
+      "attrs": {
+        "color": "blue"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "status_normal",
+      "top": 300,
+      "left": 200,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "status_warning",
+      "top": 300,
+      "left": 250,
+      "attrs": {
+        "color": "yellow"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "status_critical",
+      "top": 300,
+      "left": 300,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "buzzer1",
+      "top": 400,
+      "left": 200,
+      "attrs": {
+        "volume": "0.1"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_reset",
+      "top": 500,
+      "left": 200,
+      "attrs": {
+        "color": "red",
+        "label": "Reset"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_fan",
+      "top": 500,
+      "left": 300,
+      "attrs": {
+        "color": "blue",
+        "label": "Fan"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 220,
+      "left": 180,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": 220,
+      "left": 230,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r3",
+      "top": 220,
+      "left": 280,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r4",
+      "top": 320,
+      "left": 180,
+      "attrs": {
+        "value": "220"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:TX",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp:RX",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+    [
+      "dht1:VCC",
+      "esp:3V3",
+      "red",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "dht1:GND",
+      "esp:GND.1",
+      "black",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "dht1:SDA",
+      "esp:15",
+      "green",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "pot1:VCC",
+      "esp:3V3",
+      "red",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "pot1:GND",
+      "esp:GND.2",
+      "black",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "pot1:SIG",
+      "esp:34",
+      "yellow",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "oled1:VCC",
+      "esp:3V3",
+      "red",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "oled1:GND",
+      "esp:GND.1",
+      "black",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "oled1:SCL",
+      "esp:22",
+      "blue",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "oled1:SDA",
+      "esp:21",
+      "green",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "r1:1",
+      "esp:25",
+      "red",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "r1:2",
+      "led_r:A",
+      "",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "led_r:C",
+      "esp:GND.1",
+      "black",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "r2:1",
+      "esp:33",
+      "green",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "r2:2",
+      "led_g:A",
+      "",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "led_g:C",
+      "esp:GND.1",
+      "black",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "r3:1",
+      "esp:32",
+      "blue",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "r3:2",
+      "led_b:A",
+      "",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "led_b:C",
+      "esp:GND.1",
+      "black",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "status_normal:A",
+      "esp:26",
+      "green",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "status_normal:C",
+      "esp:GND.1",
+      "black",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "status_warning:A",
+      "esp:27",
+      "yellow",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "status_warning:C",
+      "esp:GND.1",
+      "black",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "status_critical:A",
+      "esp:14",
+      "red",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "status_critical:C",
+      "esp:GND.1",
+      "black",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "buzzer1:1",
+      "esp:19",
+      "orange",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "buzzer1:2",
+      "esp:GND.1",
+      "black",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "btn_reset:1.l",
+      "esp:18",
+      "green",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "btn_reset:2.l",
+      "esp:GND.1",
+      "black",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "btn_fan:1.l",
+      "esp:5",
+      "blue",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "btn_fan:2.l",
+      "esp:GND.1",
+      "black",
+      [
+        "h0"
+      ]
+    ]
+>>>>>>> b1cee04255997d8098520eff9262de55c6928bea
   ],
   "dependencies": {}
 }
