@@ -36,44 +36,6 @@
     },
     {
       "type": "wokwi-led",
-<<<<<<< HEAD
-      "id": "led1",
-      "top": 121.2,
-      "left": 195.8,
-      "attrs": { "color": "red" }
-    },
-    { "type": "wokwi-vcc", "id": "vcc1", "top": -95.24, "left": -201.6, "attrs": {} },
-    { "type": "wokwi-vcc", "id": "vcc2", "top": 0.76, "left": 153.6, "attrs": {} },
-    { "type": "wokwi-gnd", "id": "gnd1", "top": -76.8, "left": -183, "attrs": {} },
-    { "type": "wokwi-gnd", "id": "gnd2", "top": 19.2, "left": 239.4, "attrs": {} },
-    { "type": "wokwi-vcc", "id": "vcc3", "top": -37.64, "left": -19.2, "attrs": {} },
-    { "type": "wokwi-gnd", "id": "gnd3", "top": -19.2, "left": -106.2, "attrs": {} },
-    { "type": "wokwi-gnd", "id": "gnd4", "top": 115.2, "left": 297, "attrs": {} },
-    {
-      "type": "wokwi-resistor",
-      "id": "r1",
-      "top": 157.55,
-      "left": 134.4,
-      "attrs": { "value": "1000" }
-    },
-    { "type": "wokwi-gnd", "id": "gnd5", "top": 163.2, "left": 239.4, "attrs": {} }
-  ],
-  "connections": [
-    [ "esp:TX", "$serialMonitor:RX", "", [] ],
-    [ "esp:RX", "$serialMonitor:TX", "", [] ],
-    [ "dht1:SDA", "esp:21", "green", [ "v0" ] ],
-    [ "dht1:NC", "esp:22", "green", [ "v0" ] ],
-    [ "dht1:VCC", "vcc2:VCC", "red", [ "v0" ] ],
-    [ "dht1:GND", "gnd2:GND", "black", [ "v0" ] ],
-    [ "pot1:SIG", "esp:34", "green", [ "v0" ] ],
-    [ "pot1:VCC", "vcc3:VCC", "red", [ "v0" ] ],
-    [ "pot1:GND", "gnd3:GND", "black", [ "v0" ] ],
-    [ "bz1:2", "esp:19", "green", [ "v0" ] ],
-    [ "bz1:1", "gnd4:GND", "green", [ "v0" ] ],
-    [ "led1:C", "r1:2", "green", [ "v0" ] ],
-    [ "r1:1", "esp:2", "green", [ "v0" ] ],
-    [ "led1:A", "gnd5:GND", "green", [ "v0" ] ]
-=======
       "id": "led_r",
       "top": 200,
       "left": 200,
@@ -132,7 +94,7 @@
       "top": 400,
       "left": 200,
       "attrs": {
-        "volume": "0.1"
+        "volume": "0.5"
       }
     },
     {
@@ -453,7 +415,6 @@
         "h0"
       ]
     ]
->>>>>>> b1cee04255997d8098520eff9262de55c6928bea
   ],
   "dependencies": {}
 }
