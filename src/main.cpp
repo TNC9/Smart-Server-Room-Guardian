@@ -129,6 +129,11 @@ void callback(char *topic, byte *payload, unsigned int length) {
       Serial.printf("✅ MQTT Command: Fan set to %s\n", fanManual ? "ON" : "OFF");
       beep(100);
     } 
+    else if (strcmp(command, "DEHUMIDIFIER_CONTROL") == 0) {
+      dehumidifierManual = (value == 1);
+      Serial.printf("✅ MQTT Command: Dehumidifier set to %s\n", dehumidifierManual ? "ON" : "OFF");
+      beep(100);
+    }
     else if (strcmp(command, "RESET_ALARM") == 0) {
       alertActive = false;
       Serial.println("✅ MQTT Command: Alarm Reset");
