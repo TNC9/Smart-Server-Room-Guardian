@@ -7,20 +7,20 @@
 #include <ArduinoJson.h>  // JSON Library
 
 // ═══════════════════════════════════════════
-// ⚙️ CONFIGURATION (แก้ไขตรงนี้ให้ตรงกับ React)
+// ⚙️ CONFIGURATION
 // ═══════════════════════════════════════════
 
-// WiFi (Wokwi Guest)
+// WiFi
 const char *ssid = "Wokwi-GUEST";
 const char *password = "";
 
 // MQTT Server
 const char *mqtt_server = "broker.hivemq.com";
-const int mqtt_port = 1883; // ESP32 ใช้ Port 1883 (TCP) ส่วน React ใช้ 8000 (WebSocket)
+const int mqtt_port = 1883;
 
-// 🔥 Topics (ต้องตรงกับใน React เป๊ะๆ!)
-const char *topic_publish = "cmu/iot/benz/server-room/data";    // ส่งข้อมูลออก
-const char *topic_subscribe = "cmu/iot/benz/server-room/command"; // รอรับคำสั่ง
+// Topics
+const char *topic_publish = "cmu/iot/benz/server-room/data";
+const char *topic_subscribe = "cmu/iot/benz/server-room/command";
 
 // ═══════════════════════════════════════════
 // Hardware Definitions
@@ -29,49 +29,69 @@ const char *topic_subscribe = "cmu/iot/benz/server-room/command"; // รอร�
 #define DHT_TYPE DHT22
 #define GAS_PIN 34
 #define BUZZER_PIN 19
-#define LED_R 25
-#define LED_G 33
-#define LED_B 32
+
+// Status LEDs
 #define LED_NORMAL 26
 #define LED_WARNING 27
 #define LED_CRITICAL 14
+
+// Buttons
 #define BTN_RESET 18
 #define BTN_FAN 5
+#define BTN_DEHUMIDIFIER 17
 
+// Display
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define SCREEN_ADDRESS 0x3C
 
+// Realistic Thresholds for Server Room
+#define TEMP_NORMAL_TARGET 22.0     
+#define TEMP_WARNING 28.0           
+#define TEMP_CRITICAL 32.0          
+#define HUMIDITY_LOW 40.0           
+#define HUMIDITY_HIGH 60.0          
+#define HUMIDITY_NORMAL_TARGET 50.0 
+#define GAS_WARNING 400             
+#define GAS_CRITICAL 800            
+
+// PWM Settings
+const int buzzerChannel = 0;
+const int pwmFreq = 1000;
+const int pwmResolution = 10;
+
+// ═══════════════════════════════════════════
 // Global Objects
+// ═══════════════════════════════════════════
 DHT dht(DHT_PIN, DHT_TYPE);
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 WiFiClient espClient;
 PubSubClient client(espClient);
 
 // Global Variables
-float temperature = 0;
-float humidity = 0;
+float baseTemperature = 22.0;    // ค่าจริงจาก Sensor
+float displayTemperature = 22.0; // ค่าที่แสดง (หลังจำลอง Cooling)
+float baseHumidity = 50.0;
+float displayHumidity = 50.0;
 int gasValue = 0;
+
 String currentStatus = "normal";
 bool alertActive = false;
 bool fanManual = false;
-unsigned long lastMsg = 0;
+bool dehumidifierManual = false;
 
-// PWM Channels
-const int buzzerChannel = 0;
-const int ledRChannel = 1;
-const int ledGChannel = 2;
-const int ledBChannel = 3;
+unsigned long lastReadTime = 0;
+unsigned long lastAlertTime = 0;
+unsigned long lastCoolingTime = 0;
+
+// Cooling/Dehumidifying rates
+const float coolingRate = 0.3;              
+const float dehumidifyingRate = 1.0;        
+const unsigned long controlInterval = 2000;
 
 // ═══════════════════════════════════════════
 // Helper Functions
 // ═══════════════════════════════════════════
-
-void setRGB(int r, int g, int b) {
-  ledcWrite(ledRChannel, r);
-  ledcWrite(ledGChannel, g);
-  ledcWrite(ledBChannel, b);
-}
 
 void setStatusLEDs(String status) {
   digitalWrite(LED_NORMAL, status == "normal" ? HIGH : LOW);
@@ -85,7 +105,7 @@ void beep(int duration) {
   ledcWrite(buzzerChannel, 0);
 }
 
-// ฟังก์ชันเมื่อได้รับข้อความจาก MQTT (เช่น กดปุ่มจากหน้าเว็บ)
+// 📡 MQTT Callback (รับคำสั่งจาก Dashboard)
 void callback(char *topic, byte *payload, unsigned int length) {
   Serial.print("📩 Message arrived [");
   Serial.print(topic);
@@ -97,8 +117,6 @@ void callback(char *topic, byte *payload, unsigned int length) {
   }
   Serial.println(message);
 
-  // แปลง JSON ที่ได้รับมา
-  // คาดหวัง: {"command": "FAN_CONTROL", "value": 1}
   StaticJsonDocument<200> doc;
   DeserializationError error = deserializeJson(doc, message);
 
@@ -108,30 +126,23 @@ void callback(char *topic, byte *payload, unsigned int length) {
 
     if (strcmp(command, "FAN_CONTROL") == 0) {
       fanManual = (value == 1);
-      Serial.printf("✅ Fan set to: %s\n", fanManual ? "ON" : "OFF");
+      Serial.printf("✅ MQTT Command: Fan set to %s\n", fanManual ? "ON" : "OFF");
       beep(100);
     } 
     else if (strcmp(command, "RESET_ALARM") == 0) {
       alertActive = false;
-      Serial.println("✅ Alarm Reset via MQTT");
-      beep(100);
-      delay(100);
-      beep(100);
+      Serial.println("✅ MQTT Command: Alarm Reset");
+      beep(100); delay(100); beep(100);
     }
   }
 }
 
 void reconnect() {
-  // วนลูปจนกว่าจะต่อติด
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
-    String clientId = "ESP32Client-";
-    clientId += String(random(0xffff), HEX);
-    
-    // พยายามเชื่อมต่อ
+    String clientId = "ESP32-Guardian-" + String(random(0xffff), HEX);
     if (client.connect(clientId.c_str())) {
       Serial.println("connected");
-      // เมื่อต่อติด ให้ Subscribe รอรับคำสั่งทันที
       client.subscribe(topic_subscribe);
     } else {
       Serial.print("failed, rc=");
@@ -145,19 +156,130 @@ void reconnect() {
 void updateOLED() {
   display.clearDisplay();
   display.setCursor(0, 0);
-  display.println("Guardian: ONLINE");
-  display.drawLine(0, 10, 128, 10, SSD1306_WHITE);
-  
-  display.setCursor(0, 15);
-  display.printf("Temp: %.1f C\n", temperature);
-  display.printf("Humi: %.1f %%\n", humidity);
-  display.printf("Gas:  %d\n", gasValue);
+  display.print("Temp: "); display.print(displayTemperature, 1); display.print("C");
+  if (fanManual) display.print(" [COOL]");
+  display.println();
 
-  display.setCursor(0, 50);
-  if (fanManual) display.print("[FAN ON] ");
-  display.print(currentStatus);
-  
+  display.setCursor(0, 16); // ขยับบรรทัดให้ห่างกันหน่อย
+  display.print("Humi: "); display.print(displayHumidity, 1); display.print("%");
+  if (dehumidifierManual) display.print(" [DRY]");
+  display.println();
+
+  display.setCursor(0, 32);
+  display.print("Gas:  "); display.print(gasValue);
+  display.println();
+
+  display.setCursor(0, 52);
+  if (currentStatus == "critical") display.println("CRITICAL!");
+  else if (currentStatus == "warning") display.println("WARNING");
+  else display.println("NORMAL");
+
   display.display();
+}
+
+void readSensors() {
+  // 1. อ่านค่าจริง
+  float rawH = dht.readHumidity();
+  float rawT = dht.readTemperature();
+
+  if (!isnan(rawH) && !isnan(rawT)) {
+    baseTemperature = rawT;
+    baseHumidity = rawH;
+  }
+
+  // อ่าน Gas และแปลงค่าให้สมจริง (0-1000)
+  int rawGas = analogRead(GAS_PIN);
+  gasValue = map(rawGas, 0, 4095, 0, 1000);
+
+  // 2. จำลองการทำงานของแอร์ (Cooling Effect)
+  unsigned long currentTime = millis();
+  if (currentTime - lastCoolingTime >= controlInterval) {
+    
+    // Logic แอร์
+    if (fanManual) {
+      if (displayTemperature > TEMP_NORMAL_TARGET) {
+        displayTemperature -= coolingRate; // เย็นลง
+        if (displayTemperature < TEMP_NORMAL_TARGET) displayTemperature = TEMP_NORMAL_TARGET;
+      }
+    } else {
+      // ถ้าปิดแอร์ อุณหภูมิจะค่อยๆ กลับไปหาค่าจริง
+      if (displayTemperature < baseTemperature) {
+        displayTemperature += coolingRate; 
+        if (displayTemperature > baseTemperature) displayTemperature = baseTemperature;
+      }
+    }
+
+    // Logic เครื่องลดความชื้น
+    if (dehumidifierManual) {
+      if (displayHumidity > HUMIDITY_NORMAL_TARGET) {
+        displayHumidity -= dehumidifyingRate;
+        if (displayHumidity < HUMIDITY_NORMAL_TARGET) displayHumidity = HUMIDITY_NORMAL_TARGET;
+      }
+    } else {
+      if (displayHumidity < baseHumidity) {
+        displayHumidity += dehumidifyingRate;
+        if (displayHumidity > baseHumidity) displayHumidity = baseHumidity;
+      }
+    }
+
+    lastCoolingTime = currentTime;
+  }
+}
+
+void checkAlerts() {
+  String newStatus = "normal";
+
+  // เช็คเงื่อนไข
+  if (displayTemperature > TEMP_CRITICAL || gasValue > GAS_CRITICAL) {
+    newStatus = "critical";
+  } else if (displayTemperature > TEMP_WARNING || 
+             displayHumidity < HUMIDITY_LOW || 
+             displayHumidity > HUMIDITY_HIGH || 
+             gasValue > GAS_WARNING) {
+    newStatus = "warning";
+  }
+
+  // เปลี่ยนสถานะ
+  if (newStatus != currentStatus) {
+    currentStatus = newStatus;
+    Serial.println("⚠️ STATUS CHANGE: " + currentStatus);
+    
+    if (currentStatus == "critical") {
+      setStatusLEDs("critical");
+      alertActive = true;
+      beep(500);
+    } else if (currentStatus == "warning") {
+      setStatusLEDs("warning");
+      alertActive = true;
+      beep(200);
+    } else {
+      setStatusLEDs("normal");
+      alertActive = false;
+    }
+  }
+
+  // เสียงเตือนต่อเนื่องถ้ายัง Critical
+  if (currentStatus == "critical" && alertActive) {
+    if (millis() - lastAlertTime > 3000) {
+      beep(100);
+      lastAlertTime = millis();
+    }
+  }
+}
+
+void handleButtons() {
+  if (digitalRead(BTN_RESET) == LOW) {
+    alertActive = false;
+    beep(100); delay(300);
+  }
+  if (digitalRead(BTN_FAN) == LOW) {
+    fanManual = !fanManual;
+    beep(100); delay(300);
+  }
+  if (digitalRead(BTN_DEHUMIDIFIER) == LOW) {
+    dehumidifierManual = !dehumidifierManual;
+    beep(100); delay(300);
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -173,16 +295,11 @@ void setup() {
   pinMode(LED_CRITICAL, OUTPUT);
   pinMode(BTN_RESET, INPUT_PULLUP);
   pinMode(BTN_FAN, INPUT_PULLUP);
-  
-  // Init PWM
-  ledcSetup(buzzerChannel, 1000, 10);
+  pinMode(BTN_DEHUMIDIFIER, INPUT_PULLUP);
+  pinMode(GAS_PIN, INPUT);
+
+  ledcSetup(buzzerChannel, pwmFreq, pwmResolution);
   ledcAttachPin(BUZZER_PIN, buzzerChannel);
-  ledcSetup(ledRChannel, 1000, 10);
-  ledcSetup(ledGChannel, 1000, 10);
-  ledcSetup(ledBChannel, 1000, 10);
-  ledcAttachPin(LED_R, ledRChannel);
-  ledcAttachPin(LED_G, ledGChannel);
-  ledcAttachPin(LED_B, ledBChannel);
 
   // Init Sensors
   Wire.begin(21, 22);
@@ -192,77 +309,52 @@ void setup() {
   }
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
+  display.setTextSize(1);
   display.display();
 
-  // WiFi Connect
-  Serial.print("Connecting to WiFi");
+  // WiFi & MQTT
   WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+    delay(500); Serial.print(".");
   }
   Serial.println(" Connected!");
 
-  // MQTT Config
   client.setServer(mqtt_server, mqtt_port);
-  client.setCallback(callback); // ตั้งฟังก์ชันรอรับข้อความ
+  client.setCallback(callback);
+
+  setStatusLEDs("normal");
 }
 
 void loop() {
-  if (!client.connected()) {
-    reconnect();
-  }
-  client.loop(); // ให้ MQTT ทำงานตลอดเวลา
+  // 1. รักษาการเชื่อมต่อ MQTT
+  if (!client.connected()) reconnect();
+  client.loop();
 
+  // 2. Loop หลักทำงานทุก 2 วินาที
   unsigned long now = millis();
-  
-  // อ่านค่าและส่งข้อมูลทุก 2 วินาที
-  if (now - lastMsg > 2000) {
-    lastMsg = now;
+  if (now - lastReadTime >= 2000) {
+    lastReadTime = now;
+    
+    // อ่านค่า -> เช็คแจ้งเตือน -> อัปเดตจอ
+    readSensors();
+    checkAlerts();
+    updateOLED();
 
-    // 1. อ่านค่าเซนเซอร์
-    float newT = dht.readTemperature();
-    float newH = dht.readHumidity();
-    int newG = analogRead(GAS_PIN);
-
-    if (!isnan(newT)) temperature = newT;
-    if (!isnan(newH)) humidity = newH;
-    gasValue = newG;
-
-    // 2. คำนวณสถานะ
-    String lastStatus = currentStatus;
-    if (temperature > 40 || gasValue > 3000) currentStatus = "critical";
-    else if (temperature > 35 || humidity < 30 || humidity > 70 || gasValue > 2000) currentStatus = "warning";
-    else currentStatus = "normal";
-
-    // 3. ควบคุม LED
-    if (currentStatus == "critical") { setRGB(1023, 0, 0); setStatusLEDs("critical"); }
-    else if (currentStatus == "warning") { setRGB(512, 512, 0); setStatusLEDs("warning"); }
-    else { setRGB(0, 512, 0); setStatusLEDs("normal"); }
-
-    // 4. สร้าง JSON เพื่อส่ง MQTT
-    // รูปแบบ: {"temp": 32.5, "humi": 60.0, "gas": 1500, "status": "normal"}
+    // 📤 ส่งข้อมูลขึ้น Dashboard (ใช้ค่าที่ผ่าน Logic แล้ว)
     StaticJsonDocument<200> doc;
-    doc["temp"] = temperature;
-    doc["humi"] = humidity;
+    doc["temp"] = displayTemperature;
+    doc["humi"] = displayHumidity;
     doc["gas"] = gasValue;
     doc["status"] = currentStatus;
     
     char buffer[256];
     serializeJson(doc, buffer);
-
-    // 5. ส่งข้อมูลออกไป!
     client.publish(topic_publish, buffer);
-    Serial.print("📤 Published: ");
-    Serial.println(buffer);
-    
-    updateOLED();
+    Serial.print("📤 MQTT Published: "); Serial.println(buffer);
   }
 
-  // Manual Controls (Physical Buttons)
-  if (digitalRead(BTN_FAN) == LOW) {
-    fanManual = !fanManual;
-    beep(100);
-    delay(300);
-  }
+  // 3. รับปุ่มกด (ทำงานตลอดเวลา)
+  handleButtons();
+  delay(50); // Small delay for stability
 }
