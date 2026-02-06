@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "author": "Smart Server Room Guardian",
+  "author": "Smart Server Room Guardian - Final Version",
   "editor": "wokwi",
   "parts": [
     {
@@ -13,21 +13,21 @@
     {
       "type": "wokwi-dht22",
       "id": "dht1",
-      "top": -120,
-      "left": 200,
+      "top": -150,
+      "left": 150,
       "attrs": {}
     },
     {
-      "type": "wokwi-slide-potentiometer",
-      "id": "pot1",
-      "top": -120,
+      "type": "wokwi-gas-sensor",
+      "id": "gas1",
+      "top": -150,
       "left": 350,
       "attrs": {}
     },
     {
       "type": "wokwi-ssd1306",
       "id": "oled1",
-      "top": 100,
+      "top": 80,
       "left": 300,
       "attrs": {
         "width": "128",
@@ -36,63 +36,39 @@
     },
     {
       "type": "wokwi-led",
-      "id": "led_r",
-      "top": 200,
-      "left": 200,
-      "attrs": {
-        "color": "red"
-      }
-    },
-    {
-      "type": "wokwi-led",
-      "id": "led_g",
-      "top": 200,
-      "left": 250,
-      "attrs": {
-        "color": "green"
-      }
-    },
-    {
-      "type": "wokwi-led",
-      "id": "led_b",
-      "top": 200,
-      "left": 300,
-      "attrs": {
-        "color": "blue"
-      }
-    },
-    {
-      "type": "wokwi-led",
       "id": "status_normal",
-      "top": 300,
-      "left": 200,
+      "top": 250,
+      "left": 150,
       "attrs": {
-        "color": "green"
+        "color": "green",
+        "label": "NORMAL"
       }
     },
     {
       "type": "wokwi-led",
       "id": "status_warning",
-      "top": 300,
-      "left": 250,
+      "top": 250,
+      "left": 300,
       "attrs": {
-        "color": "yellow"
+        "color": "yellow",
+        "label": "WARNING"
       }
     },
     {
       "type": "wokwi-led",
       "id": "status_critical",
-      "top": 300,
-      "left": 300,
+      "top": 250,
+      "left": 450,
       "attrs": {
-        "color": "red"
+        "color": "red",
+        "label": "CRITICAL"
       }
     },
     {
       "type": "wokwi-buzzer",
       "id": "buzzer1",
-      "top": 400,
-      "left": 200,
+      "top": 380,
+      "left": 300,
       "attrs": {
         "volume": "0.1"
       }
@@ -101,10 +77,10 @@
       "type": "wokwi-pushbutton",
       "id": "btn_reset",
       "top": 500,
-      "left": 200,
+      "left": 150,
       "attrs": {
         "color": "red",
-        "label": "Reset"
+        "label": "Reset Alert"
       }
     },
     {
@@ -114,14 +90,24 @@
       "left": 300,
       "attrs": {
         "color": "blue",
-        "label": "Fan"
+        "label": "Cooling Fan"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_dehumidifier",
+      "top": 500,
+      "left": 450,
+      "attrs": {
+        "color": "green",
+        "label": "Dehumidifier"
       }
     },
     {
       "type": "wokwi-resistor",
       "id": "r1",
-      "top": 220,
-      "left": 180,
+      "top": 270,
+      "left": 130,
       "attrs": {
         "value": "220"
       }
@@ -129,16 +115,7 @@
     {
       "type": "wokwi-resistor",
       "id": "r2",
-      "top": 220,
-      "left": 230,
-      "attrs": {
-        "value": "220"
-      }
-    },
-    {
-      "type": "wokwi-resistor",
-      "id": "r3",
-      "top": 220,
+      "top": 270,
       "left": 280,
       "attrs": {
         "value": "220"
@@ -146,9 +123,9 @@
     },
     {
       "type": "wokwi-resistor",
-      "id": "r4",
-      "top": 320,
-      "left": 180,
+      "id": "r3",
+      "top": 270,
+      "left": 430,
       "attrs": {
         "value": "220"
       }
@@ -192,15 +169,15 @@
       ]
     ],
     [
-      "pot1:VCC",
-      "esp:3V3",
+      "gas1:VCC",
+      "esp:5V",
       "red",
       [
         "h0"
       ]
     ],
     [
-      "pot1:GND",
+      "gas1:GND",
       "esp:GND.2",
       "black",
       [
@@ -208,7 +185,7 @@
       ]
     ],
     [
-      "pot1:SIG",
+      "gas1:AO",
       "esp:34",
       "yellow",
       [
@@ -249,80 +226,16 @@
     ],
     [
       "r1:1",
-      "esp:25",
-      "red",
+      "esp:26",
+      "green",
       [
         "h0"
       ]
     ],
     [
       "r1:2",
-      "led_r:A",
-      "",
-      [
-        "h0"
-      ]
-    ],
-    [
-      "led_r:C",
-      "esp:GND.1",
-      "black",
-      [
-        "h0"
-      ]
-    ],
-    [
-      "r2:1",
-      "esp:33",
-      "green",
-      [
-        "h0"
-      ]
-    ],
-    [
-      "r2:2",
-      "led_g:A",
-      "",
-      [
-        "h0"
-      ]
-    ],
-    [
-      "led_g:C",
-      "esp:GND.1",
-      "black",
-      [
-        "h0"
-      ]
-    ],
-    [
-      "r3:1",
-      "esp:32",
-      "blue",
-      [
-        "h0"
-      ]
-    ],
-    [
-      "r3:2",
-      "led_b:A",
-      "",
-      [
-        "h0"
-      ]
-    ],
-    [
-      "led_b:C",
-      "esp:GND.1",
-      "black",
-      [
-        "h0"
-      ]
-    ],
-    [
       "status_normal:A",
-      "esp:26",
-      "green",
+      "",
       [
         "h0"
       ]
@@ -336,9 +249,17 @@
       ]
     ],
     [
-      "status_warning:A",
+      "r2:1",
       "esp:27",
       "yellow",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "r2:2",
+      "status_warning:A",
+      "",
       [
         "h0"
       ]
@@ -352,9 +273,17 @@
       ]
     ],
     [
-      "status_critical:A",
+      "r3:1",
       "esp:14",
       "red",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "r3:2",
+      "status_critical:A",
+      "",
       [
         "h0"
       ]
@@ -409,6 +338,22 @@
     ],
     [
       "btn_fan:2.l",
+      "esp:GND.1",
+      "black",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "btn_dehumidifier:1.l",
+      "esp:17",
+      "green",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "btn_dehumidifier:2.l",
       "esp:GND.1",
       "black",
       [
