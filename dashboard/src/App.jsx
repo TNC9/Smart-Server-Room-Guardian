@@ -20,7 +20,7 @@ export default function ServerRoomDashboard() {
     
     // Manual Control States
     const [fanManual, setFanManual] = useState(false);
-    const [dehumidifierManual, setDehumidifierManual] = useState(false); // ✅ เพิ่ม State เครื่องลดความชื้น
+    const [dehumidifierManual, setDehumidifierManual] = useState(false);
     const [alertActive, setAlertActive] = useState(false);
 
     useEffect(() => {
@@ -49,14 +49,14 @@ export default function ServerRoomDashboard() {
                     setData(newData);
                     setAlertActive(payload.status !== 'normal');
 
-                    // ✅ Logic กราฟที่ถูกต้อง (เก็บ 30 ค่าล่าสุด)
+                    // แก้ไขสเกลกราฟ: หาร 50 เพื่อรองรับค่า Max 5000 (5000/50 = 100%)
                     setHistory(prev => {
                         const newHistory = [...prev, {
                             time: newData.timestamp.toLocaleTimeString(),
                             temp: newData.temperature,
-                            gas: newData.gas / 41 // Scale 0-100% สำหรับกราฟ
+                            gas: newData.gas / 50 
                         }];
-                        return newHistory.slice(-30); // ตัดให้เหลือแค่ 30 อันล่าสุด
+                        return newHistory.slice(-30); 
                     });
 
                 } catch (error) {
@@ -99,6 +99,14 @@ export default function ServerRoomDashboard() {
                     <div className={`${getStatusColor()} text-white text-center py-4 rounded-2xl text-2xl font-bold transition-all`}>
                         {getStatusEmoji()} System Status: {data.status.toUpperCase()}
                     </div>
+
+                    {alertActive && (
+                        <div className="mt-4 bg-red-100 border-l-4 border-red-500 p-4 rounded animate-pulse">
+                            <p className="text-red-700 font-semibold">
+                                ⚠️ Alert Active - System requires attention!
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Sensors Grid */}
@@ -119,17 +127,18 @@ export default function ServerRoomDashboard() {
                     <div className="bg-white/95 p-6 rounded-3xl shadow-xl">
                         <div className="text-gray-500 text-sm font-semibold mb-2">💨 GAS LEVEL</div>
                         <div className="text-5xl font-bold text-purple-600">{data.gas}</div>
-                        <div className="h-2 bg-gray-200 rounded-full mt-4 overflow-hidden"><div className="h-full bg-purple-500 transition-all" style={{width: `${(data.gas/1000)*100}%`}}></div></div>
+                        {/* ปรับ Progress Bar ให้หาร 5000 */}
+                        <div className="h-2 bg-gray-200 rounded-full mt-4 overflow-hidden"><div className="h-full bg-purple-500 transition-all" style={{width: `${(data.gas/5000)*100}%`}}></div></div>
                     </div>
                 </div>
 
                 {/* Graph Section */}
-                <div className="bg-white/95 p-6 rounded-3xl shadow-xl mb-6">
+                <div className="bg-white/95 backdrop-blur rounded-3xl shadow-xl mb-6 p-6">
                     <h3 className="text-xl font-bold text-gray-800 mb-4">📈 Real-time Data Stream</h3>
                     
                     <div className="flex items-start">
-                        {/* 1. แกน Y (Scale บอกระดับ) */}
-                        <div className="flex flex-col justify-between h-48 text-xs text-gray-400 font-mono mr-2 py-1 text-right">
+                        {/* 1. แกน Y (Scale) */}
+                        <div className="flex flex-col justify-between h-48 text-xs text-gray-400 font-mono mr-2 py-1 text-right select-none">
                             <span>50°C / 100%</span>
                             <span>37.5°C / 75%</span>
                             <span>25°C / 50%</span>
@@ -138,32 +147,38 @@ export default function ServerRoomDashboard() {
                         </div>
 
                         {/* 2. พื้นที่กราฟ */}
-                        <div className="flex-1 h-48 flex justify-between gap-1 border-b border-l border-gray-200 p-2 relative">
+                        <div className="flex-1 h-48 flex justify-between gap-1 border-b border-l border-gray-200 p-2 relative items-end">
                             {history.length === 0 && <div className="absolute inset-0 flex items-center justify-center text-gray-400">Waiting for data...</div>}
                             
                             {history.map((item, i) => (
-                                <div key={i} className="flex-1 flex flex-col justify-end items-center gap-1 group relative">
+                                <div key={i} className="flex-1 h-full flex flex-row items-end justify-center gap-[1px] group relative hover:bg-gray-50/50 rounded-t">
                                     
-                                    {/* ✨ Tooltip: จะโผล่มาตอนเอาเมาส์ชี้ (Hover) */}
+                                    {/* Tooltip */}
                                     <div className="absolute bottom-full mb-2 hidden group-hover:block z-10 bg-gray-800 text-white text-xs p-2 rounded shadow-lg whitespace-nowrap">
                                         <div className="font-bold border-b border-gray-600 pb-1 mb-1">{item.time}</div>
                                         <div>🌡️ Temp: {item.temp.toFixed(1)}°C</div>
-                                        <div>💨 Gas: {Math.floor(item.gas * 41)}</div>
+                                        {/* แก้ Tooltip ให้คูณ 50 กลับคืนค่าจริง */}
+                                        <div>💨 Gas: {Math.round(item.gas * 50)}</div> 
+                                    </div>
+
+                                    {/* Temp Bar (Red) */}
+                                    <div className="w-1.5 bg-red-400/90 rounded-t hover:bg-red-500 transition-all duration-500" 
+                                         style={{ height: `${Math.min(100, (item.temp / 50) * 100)}%` }}>
                                     </div>
 
                                     {/* Gas Bar (Blue) */}
-                                    <div className="w-full bg-blue-400/80 rounded-t transition-all hover:bg-blue-500" style={{ height: `${item.gas}%` }}></div>
+                                    <div className="w-1.5 bg-blue-400/90 rounded-t hover:bg-blue-500 transition-all duration-500" 
+                                         style={{ height: `${Math.min(100, item.gas)}%` }}>
+                                    </div>
                                     
-                                    {/* Temp Bar (Red) */}
-                                    <div className="w-full bg-red-400/80 rounded-t transition-all hover:bg-red-500" style={{ height: `${(item.temp / 50) * 100}%` }}></div>
                                 </div>
                             ))}
                         </div>
                     </div>
 
                     <div className="flex gap-4 mt-4 text-xs text-gray-500 justify-end">
-                        <span className="flex items-center gap-1"><div className="w-3 h-3 bg-red-400 rounded"></div> Temperature (Max 50°C)</span>
-                        <span className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-400 rounded"></div> Gas Level (Scaled)</span>
+                        <span className="flex items-center gap-1"><div className="w-3 h-3 bg-red-400 rounded"></div> Temp (0-50°C)</span>
+                        <span className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-400 rounded"></div> Gas (0-5000 ppm)</span>
                     </div>
                 </div>
 
