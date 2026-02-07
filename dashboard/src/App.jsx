@@ -4,7 +4,7 @@ import mqtt from 'mqtt';
 // ⚙️ CONFIGURATION
 const MQTT_BROKER = 'ws://broker.hivemq.com:8000/mqtt';
 
-// ⚠️ สำคัญ: แก้ไข Topic ให้ตรงกับใน main.cpp ของคุณ (รหัสนักศึกษา/ชื่อกลุ่ม)
+// ⚠️ Topics
 const TOPIC_DATA = 'cmu/iot/benz/server-room/data'; 
 const TOPIC_COMMAND = 'cmu/iot/benz/server-room/command'; 
 
@@ -17,8 +17,6 @@ export default function ServerRoomDashboard() {
     });
 
     const [history, setHistory] = useState([]);
-    
-    // Manual Control States
     const [fanManual, setFanManual] = useState(false);
     const [dehumidifierManual, setDehumidifierManual] = useState(false);
     const [alertActive, setAlertActive] = useState(false);
@@ -49,7 +47,7 @@ export default function ServerRoomDashboard() {
                     setData(newData);
                     setAlertActive(payload.status !== 'normal');
 
-                    // แก้ไขสเกลกราฟ: หาร 50 เพื่อรองรับค่า Max 5000 (5000/50 = 100%)
+                    // ✅ แก้ไขสูตรกราฟ: หาร 50 (รองรับ Scale 0-5000)
                     setHistory(prev => {
                         const newHistory = [...prev, {
                             time: newData.timestamp.toLocaleTimeString(),
@@ -111,10 +109,10 @@ export default function ServerRoomDashboard() {
 
                 {/* Sensors Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                    {/* Temperature */}
+                    {/* Temperature (แก้เกณฑ์สีเป็น 30.0 ตาม main.cpp) */}
                     <div className="bg-white/95 p-6 rounded-3xl shadow-xl">
                         <div className="text-gray-500 text-sm font-semibold mb-2">🌡️ TEMPERATURE</div>
-                        <div className={`text-5xl font-bold ${data.temperature > 35 ? 'text-red-600' : 'text-green-600'}`}>{data.temperature.toFixed(1)}°C</div>
+                        <div className={`text-5xl font-bold ${data.temperature > 30 ? 'text-red-600' : data.temperature > 26 ? 'text-yellow-600' : 'text-green-600'}`}>{data.temperature.toFixed(1)}°C</div>
                         <div className="h-2 bg-gray-200 rounded-full mt-4 overflow-hidden"><div className="h-full bg-green-500 transition-all" style={{width: `${(data.temperature/50)*100}%`}}></div></div>
                     </div>
                     {/* Humidity */}
@@ -123,11 +121,10 @@ export default function ServerRoomDashboard() {
                         <div className="text-5xl font-bold text-blue-600">{data.humidity.toFixed(1)}%</div>
                         <div className="h-2 bg-gray-200 rounded-full mt-4 overflow-hidden"><div className="h-full bg-blue-500 transition-all" style={{width: `${data.humidity}%`}}></div></div>
                     </div>
-                    {/* Gas */}
+                    {/* Gas (แก้ Progress Bar หาร 5000) */}
                     <div className="bg-white/95 p-6 rounded-3xl shadow-xl">
                         <div className="text-gray-500 text-sm font-semibold mb-2">💨 GAS LEVEL</div>
                         <div className="text-5xl font-bold text-purple-600">{data.gas}</div>
-                        {/* ปรับ Progress Bar ให้หาร 5000 */}
                         <div className="h-2 bg-gray-200 rounded-full mt-4 overflow-hidden"><div className="h-full bg-purple-500 transition-all" style={{width: `${(data.gas/5000)*100}%`}}></div></div>
                     </div>
                 </div>
@@ -153,11 +150,10 @@ export default function ServerRoomDashboard() {
                             {history.map((item, i) => (
                                 <div key={i} className="flex-1 h-full flex flex-row items-end justify-center gap-[1px] group relative hover:bg-gray-50/50 rounded-t">
                                     
-                                    {/* Tooltip */}
+                                    {/* Tooltip: คูณ 50 กลับคืนค่าจริง */}
                                     <div className="absolute bottom-full mb-2 hidden group-hover:block z-10 bg-gray-800 text-white text-xs p-2 rounded shadow-lg whitespace-nowrap">
                                         <div className="font-bold border-b border-gray-600 pb-1 mb-1">{item.time}</div>
                                         <div>🌡️ Temp: {item.temp.toFixed(1)}°C</div>
-                                        {/* แก้ Tooltip ให้คูณ 50 กลับคืนค่าจริง */}
                                         <div>💨 Gas: {Math.round(item.gas * 50)}</div> 
                                     </div>
 
@@ -203,7 +199,7 @@ export default function ServerRoomDashboard() {
                             🌀 Fan: {fanManual ? 'ON' : 'OFF'}
                         </button>
 
-                        {/* 3. ✨ Dehumidifier Button (NEW) */}
+                        {/* 3. Dehumidifier */}
                         <button onClick={() => { 
                                     const newState = !dehumidifierManual;
                                     setDehumidifierManual(newState); 
