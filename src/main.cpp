@@ -31,9 +31,11 @@ const char *password = "";
 #define TEMP_NORMAL_TARGET 22.0
 #define TEMP_WARNING 27.0
 #define TEMP_CRITICAL 32.0
-#define HUMIDITY_LOW 40.0
-#define HUMIDITY_HIGH 60.0
-#define HUMIDITY_NORMAL_TARGET 50.0
+#define HUMIDITY_LOW 40.0           // Warning ต่ำ
+#define HUMIDITY_CRITICAL_LOW 30.0  // Critical ต่ำ (ไฟฟ้าสถิต)
+#define HUMIDITY_HIGH 60.0          // Warning สูง
+#define HUMIDITY_CRITICAL_HIGH 70.0 // Critical สูง (กัดกร่อน)
+#define HUMIDITY_NORMAL_TARGET 50.0 // เป้าหมาย
 #define GAS_WARNING 200
 #define GAS_CRITICAL 1000
 
@@ -143,11 +145,17 @@ void readSensors()
   float dhtTemp = dht.readTemperature();
   float dhtHumi = dht.readHumidity();
 
-  // ถ้าอ่านค่า DHT22 ได้ และไม่มีพัดลม/Dry ทำงาน ให้ใช้ค่าจาก sensor
-  if (!isnan(dhtTemp) && !fanActive && !dehumidifierActive)
+  // อัพเดทค่าจาก DHT22 เสมอถ้าไม่มีการควบคุม
+  if (!isnan(dhtTemp))
   {
-    temperature = dhtTemp;
-    humidity = dhtHumi;
+    if (!fanActive)
+      temperature = dhtTemp;
+  }
+
+  if (!isnan(dhtHumi))
+  {
+    if (!dehumidifierActive)
+      humidity = dhtHumi;
   }
 
   // ========================================
@@ -246,6 +254,18 @@ void checkAlerts()
   {
     newStatus = "critical";
     alertMsg += "☠️ CRITICAL GAS: " + String((int)gasValue) + " ppm\n";
+  }
+
+  // ตรวจสอบ Critical Humidity ก่อน
+  if (humidity < HUMIDITY_CRITICAL_LOW)
+  {
+    newStatus = "critical";
+    alertMsg += "⚡ CRITICAL DRY: " + String(humidity, 1) + "% (Static Risk)\n";
+  }
+  if (humidity > HUMIDITY_CRITICAL_HIGH)
+  {
+    newStatus = "critical";
+    alertMsg += "💧 CRITICAL WET: " + String(humidity, 1) + "% (Corrosion Risk)\n";
   }
 
   // ถ้าไม่ Critical ตรวจสอบ Warning
@@ -425,6 +445,8 @@ void setup()
 
   Serial.printf("Humidity:\n");
   Serial.printf("  • Normal: %.1f - %.1f%%\n", HUMIDITY_LOW, HUMIDITY_HIGH);
+  Serial.printf("  • Warning: <%.1f%% or >%.1f%%\n", HUMIDITY_LOW, HUMIDITY_HIGH);
+  Serial.printf("  • Critical: <%.1f%% or >%.1f%%\n", HUMIDITY_CRITICAL_LOW, HUMIDITY_CRITICAL_HIGH);
   Serial.printf("  • Target: %.1f%%\n\n", HUMIDITY_NORMAL_TARGET);
 
   Serial.printf("Gas:\n");
