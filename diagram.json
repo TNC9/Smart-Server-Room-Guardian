@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "author": "Smart Server Room Guardian - Final Version",
+  "author": "Smart Server Room Guardian - Final Version with Gas Control",
   "editor": "wokwi",
   "parts": [
     {
@@ -70,37 +70,57 @@
       "top": 380,
       "left": 300,
       "attrs": {
-        "volume": "1.0"
+        "volume": "0.1"
       }
     },
     {
       "type": "wokwi-pushbutton",
       "id": "btn_reset",
       "top": 500,
-      "left": 150,
+      "left": 50,
       "attrs": {
         "color": "red",
-        "label": "Reset Alert"
+        "label": "Reset"
       }
     },
     {
       "type": "wokwi-pushbutton",
       "id": "btn_fan",
       "top": 500,
-      "left": 300,
+      "left": 180,
       "attrs": {
         "color": "blue",
-        "label": "Cooling Fan"
+        "label": "Fan"
       }
     },
     {
       "type": "wokwi-pushbutton",
       "id": "btn_dehumidifier",
       "top": 500,
-      "left": 450,
+      "left": 310,
       "attrs": {
         "color": "green",
-        "label": "Dehumidifier"
+        "label": "Dry"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_gas_up",
+      "top": 500,
+      "left": 440,
+      "attrs": {
+        "color": "yellow",
+        "label": "Gas UP"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_gas_down",
+      "top": 500,
+      "left": 570,
+      "attrs": {
+        "color": "orange",
+        "label": "Gas DOWN"
       }
     },
     {
@@ -354,6 +374,38 @@
     ],
     [
       "btn_dehumidifier:2.l",
+      "esp:GND.1",
+      "black",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "btn_gas_up:1.l",
+      "esp:16",
+      "yellow",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "btn_gas_up:2.l",
+      "esp:GND.1",
+      "black",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "btn_gas_down:1.l",
+      "esp:4",
+      "orange",
+      [
+        "h0"
+      ]
+    ],
+    [
+      "btn_gas_down:2.l",
       "esp:GND.1",
       "black",
       [
